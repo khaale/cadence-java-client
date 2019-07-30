@@ -1,1 +1,3 @@
 rootProject.name = 'cadence-client'
+include 'spring-cadence'
+

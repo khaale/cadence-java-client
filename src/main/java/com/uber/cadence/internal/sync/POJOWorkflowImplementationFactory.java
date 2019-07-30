@@ -17,8 +17,6 @@
 
 package com.uber.cadence.internal.sync;
 
-import static com.uber.cadence.worker.NonDeterministicWorkflowPolicy.FailWorkflow;
-
 import com.google.common.reflect.TypeToken;
 import com.uber.cadence.WorkflowType;
 import com.uber.cadence.converter.DataConverter;
@@ -95,11 +93,7 @@ final class POJOWorkflowImplementationFactory implements ReplayWorkflowFactory {
 
   <R> void addWorkflowImplementationFactory(Class<R> clazz, Functions.Func<R> factory) {
     workflowImplementationFactories.put(clazz, factory);
-    WorkflowImplementationOptions unitTestingOptions =
-        new WorkflowImplementationOptions.Builder()
-            .setNonDeterministicWorkflowPolicy(FailWorkflow)
-            .build();
-    addWorkflowImplementationType(unitTestingOptions, clazz);
+    addWorkflowImplementationType(new WorkflowImplementationOptions.Builder().build(), clazz);
   }
 
   private void addWorkflowImplementationType(
