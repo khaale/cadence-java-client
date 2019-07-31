@@ -1,12 +1,17 @@
 package org.springframework.cadence.configuration;
 
 import com.uber.cadence.worker.Worker;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cadence.annotation.CadenceWorkflowAnnotationPostProcessor;
+import org.springframework.cadence.annotation.CadenceWorkflowRegistrar;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class CadenceWorkerAutoConfiguration {
+
+  @Autowired private BeanFactory beanFactory;
 
   @Bean
   public Worker.Factory workerFactory() {
@@ -14,9 +19,8 @@ public class CadenceWorkerAutoConfiguration {
   }
 
   @Bean
-  public Worker worker() {
-    Worker.Factory factory = workerFactory();
-    return factory.newWorker("my_task_list");
+  public CadenceWorkflowRegistrar cadenceWorkflowRegistrar() {
+    return new CadenceWorkflowRegistrar(workerFactory(), beanFactory);
   }
 
   @Bean

@@ -1,19 +1,21 @@
 package org.springframework.cadence.sample.workflows;
 
-import org.springframework.stereotype.Component;
+import static org.springframework.cadence.sample.DemoApp.GREETING_WORKER;
 
-@Component
+import com.uber.cadence.workflow.Workflow;
+import org.springframework.cadence.annotation.CadenceWorkflow;
+import org.springframework.cadence.sample.activities.GreetingActivities;
+
+@CadenceWorkflow(worker = GREETING_WORKER)
 public class GreetingWorkflowImpl implements GreetingWorkflow {
 
   private int counter = 0;
 
-  public GreetingWorkflowImpl() {
-    System.out.println("GreetingWorkflowImpl created");
-  }
+  private final GreetingActivities activities = Workflow.newActivityStub(GreetingActivities.class);
 
   @Override
   public String getGreeting(String name) {
     counter++;
-    return "Hello " + name + " (" + counter + ")";
+    return activities.composeGreeting(name) + " (" + counter + ")";
   }
 }

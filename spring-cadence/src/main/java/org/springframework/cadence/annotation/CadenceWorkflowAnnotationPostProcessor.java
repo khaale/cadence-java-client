@@ -1,6 +1,5 @@
 package org.springframework.cadence.annotation;
 
-import com.uber.cadence.worker.Worker;
 import com.uber.cadence.workflow.WorkflowMethod;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -19,24 +18,19 @@ public class CadenceWorkflowAnnotationPostProcessor
 
   private ConfigurableListableBeanFactory beanFactory;
   private List<WorkflowBeanDefinition> workflowDefinitions;
-  private Worker.Factory workerFactory;
+  private List<ActivitiesBeanDefinition> activityDefinitions;
+  private CadenceWorkflowRegistrar registrar;
 
   @Override
   public void afterSingletonsInstantiated() {
 
-    this.workflowDefinitions.forEach(this::registerWorkflow);
-  }
+    this.registrar = beanFactory.getBean(CadenceWorkflowRegistrar.class);
 
-  private void registerWorkflow(WorkflowBeanDefinition definition) {
+    this.registrar.setActivities(this.activityDefinitions);
+    this.registrar.setWorkflows(this.workflowDefinitions);
 
-    Worker worker = beanFactory.getBean(Worker.class);
-
-    //noinspection unchecked
-    worker.addWorkflowImplementationFactory(
-        definition.getWorkflowInterface(), () -> beanFactory.getBean(definition.getBeanName()));
-
-    workerFactory = beanFactory.getBean(Worker.Factory.class);
-    workerFactory.start();
+    registrar.registerWorkers();
+    registrar.start();
   }
 
   private boolean isWorkflow(Class<?> workflowInterface) {
@@ -63,34 +57,59 @@ public class CadenceWorkflowAnnotationPostProcessor
   public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
       throws BeansException {
 
+    this.beanFactory = beanFactory;
+
     workflowDefinitions =
-        Arrays.stream(beanFactory.getBeanDefinitionNames())
-            .map(bn -> this.getWorkflowDefinition(beanFactory, bn))
-            .filter(Optional::isPresent)
-            .map(Optional::get)
+        Arrays.stream(beanFactory.getBeanNamesForAnnotation(CadenceWorkflow.class))
+            .map(this::getWorkflowDefinition)
             .collect(Collectors.toList());
 
-    // forcibly set wf scopes to 'prototype' in order to get them instantiated every time
-    workflowDefinitions.forEach(wd -> wd.getBeanDefinition().setScope("prototype"));
+    activityDefinitions =
+        Arrays.stream(beanFactory.getBeanNamesForAnnotation(CadenceActivities.class))
+            .map(this::getActivitiesDefinition)
+            .collect(Collectors.toList());
   }
 
-  private Optional<WorkflowBeanDefinition> getWorkflowDefinition(
-      ConfigurableListableBeanFactory beanFactory, String beanName) {
-    this.beanFactory = beanFactory;
+  private ActivitiesBeanDefinition getActivitiesDefinition(String beanName) {
     try {
       BeanDefinition beanDefinition = beanFactory.getBeanDefinition(beanName);
 
       String className = beanDefinition.getBeanClassName();
       if (className == null) {
-        return Optional.empty();
+        throw new RuntimeException("Bean should provide a className");
       }
 
       Class clazz = Class.forName(className);
+      CadenceActivities annotation =
+          (CadenceActivities) clazz.getAnnotation(CadenceActivities.class);
+
+      return new ActivitiesBeanDefinition(annotation.worker(), beanName);
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private WorkflowBeanDefinition getWorkflowDefinition(String beanName) {
+    try {
+      BeanDefinition beanDefinition = beanFactory.getBeanDefinition(beanName);
+
+      String className = beanDefinition.getBeanClassName();
+      if (className == null) {
+        throw new RuntimeException("Bean should provide a className");
+      }
+
+      Class clazz = Class.forName(className);
+      CadenceWorkflow annotation = (CadenceWorkflow) clazz.getAnnotation(CadenceWorkflow.class);
 
       Optional<Class> workflowInterfaceOpt =
           Arrays.stream(clazz.getInterfaces()).filter(this::isWorkflow).findFirst();
-      return workflowInterfaceOpt.map(
-          aClass -> new WorkflowBeanDefinition(beanName, beanDefinition, aClass, clazz));
+      return workflowInterfaceOpt
+          .map(
+              aClass ->
+                  new WorkflowBeanDefinition(
+                      annotation.worker(), beanName, beanDefinition, aClass, clazz))
+          .orElseThrow(
+              () -> new RuntimeException("Unable to find an interface with workflow marker."));
 
     } catch (ClassNotFoundException e) {
       throw new RuntimeException(e);
@@ -99,40 +118,6 @@ public class CadenceWorkflowAnnotationPostProcessor
 
   @Override
   public void destroy() throws Exception {
-    workerFactory.shutdown();
-  }
-
-  private static class WorkflowBeanDefinition {
-    private String beanName;
-    private BeanDefinition beanDefinition;
-    private Class workflowInterface;
-    private Class workflowImpl;
-
-    WorkflowBeanDefinition(
-        String beanName,
-        BeanDefinition beanDefinition,
-        Class workflowInterface,
-        Class workflowImpl) {
-      this.beanName = beanName;
-      this.beanDefinition = beanDefinition;
-      this.workflowInterface = workflowInterface;
-      this.workflowImpl = workflowImpl;
-    }
-
-    String getBeanName() {
-      return beanName;
-    }
-
-    BeanDefinition getBeanDefinition() {
-      return beanDefinition;
-    }
-
-    Class getWorkflowInterface() {
-      return workflowInterface;
-    }
-
-    public Class getWorkflowImpl() {
-      return workflowImpl;
-    }
+    registrar.stop();
   }
 }

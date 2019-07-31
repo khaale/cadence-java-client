@@ -11,6 +11,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 @EnableCadence
 public class DemoApp {
 
+  public static final String GREETING_WORKER = "greetingWorker";
+
   public static void main(String[] args) {
     ConfigurableApplicationContext app = SpringApplication.run(DemoApp.class, args);
 
