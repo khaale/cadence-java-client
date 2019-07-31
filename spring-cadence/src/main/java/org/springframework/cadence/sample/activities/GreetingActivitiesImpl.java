@@ -8,6 +8,6 @@ import org.springframework.cadence.annotation.CadenceActivities;
 public class GreetingActivitiesImpl implements GreetingActivities {
   @Override
   public String composeGreeting(String name) {
-    return "Hello" + name;
+    return "Hello " + name;
   }
 }

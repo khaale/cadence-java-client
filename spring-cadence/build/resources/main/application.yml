@@ -1,0 +1,5 @@
+cadence:
+  domain: sample
+  workers:
+    greetingWorker:
+      taskList: GREETING

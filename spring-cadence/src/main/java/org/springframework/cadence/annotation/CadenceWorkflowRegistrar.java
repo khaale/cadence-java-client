@@ -1,24 +1,25 @@
 package org.springframework.cadence.annotation;
 
 import com.uber.cadence.worker.Worker;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import org.springframework.beans.factory.BeanFactory;
+import org.springframework.cadence.configuration.CadenceProperties;
 
 public class CadenceWorkflowRegistrar {
 
   private Worker.Factory factory;
   private BeanFactory beanFactory;
+  private CadenceProperties cadenceProperties;
 
   private List<WorkflowBeanDefinition> workflows = new ArrayList<>();
   private List<ActivitiesBeanDefinition> activities = new ArrayList<>();
   private Map<String, Worker> workerMap = new HashMap<>();
 
-  public CadenceWorkflowRegistrar(Worker.Factory factory, BeanFactory beanFactory) {
+  public CadenceWorkflowRegistrar(
+      Worker.Factory factory, BeanFactory beanFactory, CadenceProperties cadenceProperties) {
     this.factory = factory;
     this.beanFactory = beanFactory;
+    this.cadenceProperties = cadenceProperties;
   }
 
   public void setWorkflows(List<WorkflowBeanDefinition> workflows) {
@@ -50,17 +51,28 @@ public class CadenceWorkflowRegistrar {
     factory.shutdown();
   }
 
-  private Worker getWorker(String workerName) {
-    return workerMap.computeIfAbsent(workerName, w -> factory.newWorker("my_task_list"));
+  private Worker getOrNewWorker(String workerName) {
+    return workerMap.computeIfAbsent(workerName, this::newWorker);
+  }
+
+  private Worker newWorker(String workerName) {
+    String taskList =
+        Optional.ofNullable(cadenceProperties.getWorkers().getOrDefault(workerName, null))
+            .orElseThrow(
+                () ->
+                    new RuntimeException(
+                        String.format("Missing configuration for worker '%s'", workerName)))
+            .getTaskList();
+    return factory.newWorker(taskList);
   }
 
   private void registerActivities(ActivitiesBeanDefinition definition) {
-    Worker worker = getWorker(definition.getWorker());
+    Worker worker = getOrNewWorker(definition.getWorker());
     worker.registerActivitiesImplementations(beanFactory.getBean(definition.getBeanName()));
   }
 
   private void registerWorkflow(WorkflowBeanDefinition definition) {
-    Worker worker = getWorker(definition.getWorker());
+    Worker worker = getOrNewWorker(definition.getWorker());
 
     //noinspection unchecked
     worker.addWorkflowImplementationFactory(

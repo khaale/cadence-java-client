@@ -4,6 +4,6 @@ import com.uber.cadence.workflow.WorkflowMethod;
 
 public interface GreetingWorkflow {
 
-  @WorkflowMethod(executionStartToCloseTimeoutSeconds = 100, taskList = "my_task_list")
+  @WorkflowMethod
   String getGreeting(String name);
 }
