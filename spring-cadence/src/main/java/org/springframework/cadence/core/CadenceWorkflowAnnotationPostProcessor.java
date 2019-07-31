@@ -1,4 +1,4 @@
-package org.springframework.cadence.annotation;
+package org.springframework.cadence.core;
 
 import com.uber.cadence.workflow.WorkflowMethod;
 import java.lang.reflect.Method;
@@ -12,6 +12,8 @@ import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.cadence.annotation.CadenceActivities;
+import org.springframework.cadence.annotation.CadenceWorkflow;
 
 public class CadenceWorkflowAnnotationPostProcessor
     implements SmartInitializingSingleton, BeanFactoryPostProcessor, DisposableBean {

@@ -1,4 +1,4 @@
-package org.springframework.cadence.annotation;
+package org.springframework.cadence.core;
 
 import com.uber.cadence.worker.Worker;
 import java.util.*;

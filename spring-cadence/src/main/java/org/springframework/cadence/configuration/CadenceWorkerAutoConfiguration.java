@@ -5,8 +5,8 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cadence.annotation.CadenceWorkflowAnnotationPostProcessor;
-import org.springframework.cadence.annotation.CadenceWorkflowRegistrar;
+import org.springframework.cadence.core.CadenceWorkflowAnnotationPostProcessor;
+import org.springframework.cadence.core.CadenceWorkflowRegistrar;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

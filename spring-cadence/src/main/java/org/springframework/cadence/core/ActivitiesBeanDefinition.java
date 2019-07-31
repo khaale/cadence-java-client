@@ -1,4 +1,4 @@
-package org.springframework.cadence.annotation;
+package org.springframework.cadence.core;
 
 public class ActivitiesBeanDefinition {
   private String worker;

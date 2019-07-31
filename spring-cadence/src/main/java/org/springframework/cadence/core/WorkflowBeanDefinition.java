@@ -1,4 +1,4 @@
-package org.springframework.cadence.annotation;
+package org.springframework.cadence.core;
 
 import org.springframework.beans.factory.config.BeanDefinition;
 
